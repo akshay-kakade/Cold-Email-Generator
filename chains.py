@@ -1,31 +1,31 @@
-import streamlit as st
+import os
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.exceptions import OutputParserException
 
-
 class Chain:
     def __init__(self):
-        # Load API key from Streamlit secrets
-        groq_key = st.secrets["GROQ_API_KEY"]
         self.llm = ChatGroq(
             temperature=0,
-            groq_api_key=groq_key,
+            groq_api_key=os.getenv("GROQ_API_KEY"),
             model_name="llama-3.1-8b-instant"
         )
 
     def extract_jobs(self, cleaned_text):
         prompt_extract = PromptTemplate.from_template(
             """
-        ### SCRAPED TEXT FROM WEBSITE:
-        {page_data}
-        ### INSTRUCTION:
-        The scraped text is from the career's page of a website.
-        Your job is to extract the job postings and return them in JSON format containing the following keys: `role`, `experience`, `skills` and `description`.
-        Only return the valid JSON.
-        ### VALID JSON (NO PREAMBLE):
-        """
+            ### SCRAPED TEXT FROM WEBSITE:
+            {page_data}
+
+            ### INSTRUCTION:
+            Extract job postings and return in JSON format containing:
+            - role
+            - experience
+            - skills
+            - description
+            Return valid JSON only.
+            """
         )
 
         chain_extract = prompt_extract | self.llm
@@ -41,18 +41,14 @@ class Chain:
         prompt_email = PromptTemplate.from_template(
             """
             ### JOB DESCRIPTION:
-        {job_description}
+            {job_description}
 
-        ### INSTRUCTION:
-        You are Mandy Jones, a Business Development Executive at Amber. Amber is an AI & Software company that focuses on the seamless integration of business processes through automated tools.
-        Over our experience, we have empowered numerous enterprises with tailored solutions leading to process optimization, cost reduction, and heightened overall efficiency.
-        Your job is to write a cold email to the client regarding the job mentioned above and assist them in fulfilling their needs.
-        Also, add the most relevant ones from the following links to showcase AtliQ's portfolio: {link_list}
-        Remember: You are Mandy Jones, BDE at Amber.
-        Do not provide a preamble.
-        ### EMAIL (NO PREAMBLE):
-
-        """
+            ### INSTRUCTION:
+            You are Mandy Jones, a Business Development Executive at Amber, an AI & Software company.
+            Write a cold email to address the client's needs based on the job description above.
+            Showcase the most relevant ones from the following links: {link_list}
+            Do not provide a preamble.
+            """
         )
 
         chain_email = prompt_email | self.llm

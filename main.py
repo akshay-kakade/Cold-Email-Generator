@@ -1,58 +1,52 @@
+import sys
+
+# Fix for outdated SQLite on Streamlit Cloud
+__import__('pysqlite3')
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 import streamlit as st
 from chains import Chain
 from portfolio import Portfolio
 from utils import clean_text
-import requests
+from langchain_community.document_loaders import WebBaseLoader
 
-# Page config
-st.set_page_config(page_title="Cold Email Generator", layout="wide")
+def create_streamlit_app(llm, portfolio, clean_text):
+    st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📮")
+    st.title("📮 Cold Email Generator")
 
-st.title("📮 Cold Email Generator")
-st.write("Paste a job posting URL, and get a personalized cold email instantly.")
+    # Input for job post URL
+    Url_input = st.text_input(
+        "🔗 Enter a Job Post URL:",
+        value="https://careers.nike.com/department-manager-nike-dolphin-mall/job/R-67111",
+        help="Paste the direct link to a job posting."
+    )
 
-# Create instances
-chain = Chain()
-portfolio = Portfolio()
-portfolio.load_portfolio()
+    # Center the submit button
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        submit_button = st.button("🚀 Generate Email", use_container_width=True)
 
-# Input
-url = st.text_input("Enter Job Post URL:")
+    if submit_button:
+        with st.spinner("Scraping job post and crafting your email..."):
+            try:
+                loader = WebBaseLoader([Url_input])
+                data = clean_text(loader.load().pop().page_content)
+                portfolio.load_portfolio()
 
-if st.button("Generate Cold Email"):
-    if not url.strip():
-        st.error("Please enter a URL.")
-    else:
-        try:
-            with st.spinner("Scraping website..."):
-                response = requests.get(url, timeout=10)
-                if response.status_code != 200:
-                    st.error("Failed to retrieve page.")
-                    st.stop()
-                raw_text = response.text
+                jobs = llm.extract_jobs(data)
+                for job in jobs:
+                    skills = job.get("skills", [])
+                    links = portfolio.query_links(skills)
+                    email = llm.write_email(job, links)
 
-            cleaned_text = clean_text(raw_text)
+                    st.markdown("---")
+                    st.subheader(f"✉ Cold Email for: {job.get('role', 'Unknown Role')}")
+                    st.markdown(email)
 
-            with st.spinner("Extracting job postings..."):
-                jobs = chain.extract_jobs(cleaned_text)
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
 
-            if not jobs:
-                st.warning("No job postings found.")
-                st.stop()
-
-            for i, job in enumerate(jobs, start=1):
-                st.subheader(f"{i}. {job['role']}")
-                st.write(f"**Experience:** {job['experience']}")
-                st.write(f"**Skills:** {job['skills']}")
-                st.write(f"**Description:** {job['description']}")
-
-                skills = job.get("skills", "").split(",")
-                links_meta = portfolio.query_links(skills)
-                links = [meta["links"] for meta in links_meta[0]] if links_meta else []
-
-                email = chain.write_email(job, links)
-
-                st.markdown("### ✉ Cold Email")
-                st.code(email, language="markdown")
-
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
+if __name__ == "__main__":
+    chain = Chain()
+    portfolio = Portfolio()
+    create_streamlit_app(chain, portfolio, clean_text)

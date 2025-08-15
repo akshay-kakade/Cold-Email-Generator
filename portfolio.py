@@ -1,20 +1,15 @@
+import chromadb
 import pandas as pd
 import uuid
-import chromadb
-
+import os
 
 class Portfolio:
     def __init__(self, file_path="resource/clean_fixed.csv"):
         self.file_path = file_path
         self.data = pd.read_csv(self.file_path)
 
-        # Use DuckDB backend to avoid SQLite version issues on Streamlit Cloud
-        self.chroma_client = chromadb.Client(
-            settings=chromadb.config.Settings(
-                persist_directory=None,  # in-memory
-                chroma_db_impl="duckdb+parquet"
-            )
-        )
+        # Use DuckDB backend to avoid SQLite issues
+        self.chroma_client = chromadb.PersistentClient(path="vectorstore")
         self.collection = self.chroma_client.get_or_create_collection(name="portfolio")
 
     def load_portfolio(self):
@@ -27,5 +22,9 @@ class Portfolio:
                 )
 
     def query_links(self, skills):
-        results = self.collection.query(query_texts=skills, n_results=2)
+        results = self.collection.query(
+            query_texts=skills,
+            n_results=2,
+            include=["metadatas", "documents", "distances"]
+        )
         return [m["links"] for m in results.get("metadatas", []) if "links" in m]
