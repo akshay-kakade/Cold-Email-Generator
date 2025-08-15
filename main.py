@@ -7,7 +7,6 @@ from chains import Chain
 from portfolio import Portfolio
 from utils import clean_text
 from langchain_community.document_loaders import WebBaseLoader
-import pyperclip
 
 st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📮")
 st.markdown("""
@@ -42,6 +41,21 @@ html, body, [class*="css"] {
 </style>
 """, unsafe_allow_html=True)
 
+def copy_button_js(text, button_id):
+    """Return HTML+JS for a copy-to-clipboard button."""
+    return f"""
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(`{text}`)">
+            📋 Copy Email
+        </button>
+        <script>
+        const btn = document.getElementById('{button_id}');
+        btn?.addEventListener('click', () => {{
+            navigator.clipboard.writeText(`{text}`);
+            alert('Copied to clipboard!');
+        }});
+        </script>
+    """
+
 def create_streamlit_app(llm, portfolio, clean_text):
     st.markdown(
         """
@@ -67,7 +81,7 @@ def create_streamlit_app(llm, portfolio, clean_text):
                 portfolio.load_portfolio()
 
                 jobs = llm.extract_jobs(data)
-                for job in jobs:
+                for idx, job in enumerate(jobs):
                     skills = job.get("skills", [])
                     links = portfolio.query_links(skills)
                     email = llm.write_email(job, links)
@@ -76,12 +90,10 @@ def create_streamlit_app(llm, portfolio, clean_text):
                     st.subheader(f"✉ Cold Email for: {job.get('role', 'Unknown Role')}")
                     st.markdown(f"<div class='email-box'>{email}</div>", unsafe_allow_html=True)
 
-                    # Professional Copy Button
-                    if st.button("📋 Copy Email"):
-                        pyperclip.copy(email)
-                        st.success("Email copied to clipboard!")
+                    # Copy Button using JS
+                    st.markdown(copy_button_js(email.replace("`", "\\`"), f"copy-btn-{idx}"), unsafe_allow_html=True)
 
-                    # Download Email Button
+                    # Download Button
                     st.download_button(
                         label="💾 Download Email",
                         data=email,
