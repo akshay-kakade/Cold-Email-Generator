@@ -1,17 +1,19 @@
 import os
+import streamlit as st
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.exceptions import OutputParserException
-from dotenv import load_dotenv
-
-
-load_dotenv()
 
 class Chain:
     def __init__(self):
-        self.llm = ChatGroq(temperature=0, groq_api_key=os.getenv("GROQ_API_KEY"),  model_name="llama-3.1-8b-instant")
-
+        # Get API key from Streamlit secrets
+        groq_key = st.secrets["GROQ_API_KEY"]
+        self.llm = ChatGroq(
+            temperature=0,
+            groq_api_key=groq_key,
+            model_name="llama-3.1-8b-instant"
+        )
 
     def extract_jobs(self, cleaned_text):
         prompt_extract = PromptTemplate.from_template(
@@ -25,7 +27,6 @@ class Chain:
         ### VALID JSON (NO PREAMBLE):
         """
         )
-
         chain_extract = prompt_extract | self.llm
         res = chain_extract.invoke(input={'page_data': cleaned_text})
         try:
@@ -49,9 +50,9 @@ class Chain:
         Remember: You are Mandy Jones, BDE at Amber.
         Do not provide a preamble.
         ### EMAIL (NO PREAMBLE):
-
-        """)
-
+        """
+        )
         chain_email = prompt_email | self.llm
         res = chain_email.invoke({"job_description": str(job), "link_list": links})
         return res.content
+                                           
