@@ -1,56 +1,28 @@
+# chain.py
 import os
-from langchain_groq import ChatGroq
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.exceptions import OutputParserException
+import requests
 
-class Chain:
-    def __init__(self):
-        self.llm = ChatGroq(
-            temperature=0,
-            groq_api_key=os.getenv("GROQ_API_KEY"),
-            model_name="llama-3.1-8b-instant"
-        )
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-    def extract_jobs(self, cleaned_text):
-        prompt_extract = PromptTemplate.from_template(
-            """
-            ### SCRAPED TEXT FROM WEBSITE:
-            {page_data}
+def generate_email(job_description: str) -> str:
+    if not GROQ_API_KEY:
+        raise ValueError("GROQ_API_KEY is missing. Set it in Streamlit Secrets.")
 
-            ### INSTRUCTION:
-            Extract job postings and return in JSON format containing:
-            - role
-            - experience
-            - skills
-            - description
-            Return valid JSON only.
-            """
-        )
+    # Replace with your own LLM API request
+    response = requests.post(
+        "https://api.groq.com/v1/chat/completions",
+        headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+        json={
+            "model": "mixtral-8x7b-32768",
+            "messages": [
+                {"role": "system", "content": "You are an expert cold email writer."},
+                {"role": "user", "content": f"Write a cold email for this job:\n{job_description}"}
+            ],
+            "temperature": 0.7
+        }
+    )
 
-        chain_extract = prompt_extract | self.llm
-        res = chain_extract.invoke(input={'page_data': cleaned_text})
-        try:
-            json_parser = JsonOutputParser()
-            res = json_parser.parse(res.content)
-        except OutputParserException:
-            raise OutputParserException("Failed to extract job postings")
-        return res if isinstance(res, list) else [res]
+    if response.status_code != 200:
+        raise RuntimeError(f"Groq API Error: {response.text}")
 
-    def write_email(self, job, links):
-        prompt_email = PromptTemplate.from_template(
-            """
-            ### JOB DESCRIPTION:
-            {job_description}
-
-            ### INSTRUCTION:
-            You are Mandy Jones, a Business Development Executive at Amber, an AI & Software company.
-            Write a cold email to address the client's needs based on the job description above.
-            Showcase the most relevant ones from the following links: {link_list}
-            Do not provide a preamble.
-            """
-        )
-
-        chain_email = prompt_email | self.llm
-        res = chain_email.invoke({"job_description": str(job), "link_list": links})
-        return res.content
+    return response.json()["choices"][0]["message"]["content"]
