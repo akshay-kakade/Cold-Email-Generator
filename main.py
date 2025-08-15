@@ -33,18 +33,37 @@ def email_block(email_text):
         unsafe_allow_html=True
     )
 
-    colA, colB = st.columns(2)
-    with colA:
+    # Centered row for buttons with spacing and responsive sizing
+    st.markdown("""
+        <style>
+        .button-row { display: flex; justify-content: center; gap: 1rem; margin: 1rem 0 0.5rem 0; flex-wrap: wrap; }
+        .button-row .stButton, .button-row .stDownloadButton { min-width: 180px; flex: 1 1 180px; }
+        @media (max-width: 600px) {
+            .button-row { flex-direction: column; gap: 0.5rem; }
+            .button-row .stButton, .button-row .stDownloadButton { min-width: 100%; }
+        }
+        </style>
+        <div class="button-row">
+            <div id="download-btn"></div>
+            <div id="copy-btn"></div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Render buttons into the placeholders
+    download_ph = st.empty()
+    copy_ph = st.empty()
+    with download_ph.container():
         st.download_button(
             label="⬇️ Download as .txt",
             data=email_text,
             file_name="cold_email.txt",
             mime="text/plain",
             help="Download the generated email as a text file.",
-            use_container_width=True
+            use_container_width=True,
+            key=email_text[:8] + "_download"
         )
-    with colB:
-        if st.button("📋 Copy Email", use_container_width=True, key=email_text[:10]):
+    with copy_ph.container():
+        if st.button("📋 Copy Email", use_container_width=True, key=email_text[:8] + "_copy"):
             st.session_state['copied_email'] = email_text
             st.success("Copied to clipboard! (Select and copy manually if not auto-copied)")
             st.code(email_text, language=None)
@@ -108,7 +127,7 @@ def create_streamlit_app(llm, portfolio, clean_text):
         <span style='font-size:13px;color:#888;'>UI by <b>Akshay Kakade</b> & <b>Maverick Jones</b></span>
         """, unsafe_allow_html=True)
 
-    st.title("�📮 Cold Email Generator")
+    st.title("📮 Cold Email Generator")
     st.markdown(
         "<p style='color:gray;font-size:15px;'>Enter a job post URL and get a custom-crafted cold email with relevant portfolio links.</p>",
         unsafe_allow_html=True
