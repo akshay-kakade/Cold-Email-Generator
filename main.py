@@ -1,7 +1,7 @@
 # main.py
 import streamlit as st
 from portfolio import Portfolio
-from chain import generate_email
+from chains import generate_email
 from bs4 import BeautifulSoup
 import requests
 
