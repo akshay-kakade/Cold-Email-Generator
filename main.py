@@ -9,15 +9,39 @@ from portfolio import Portfolio
 from utils import clean_text
 from langchain_community.document_loaders import WebBaseLoader
 
-def create_streamlit_app(llm, portfolio, clean_text):
-    st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📮")
+# ===== GLOBAL STYLING =====
+st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📮")
+st.markdown("""
+<style>
+/* Prevent horizontal scrolling */
+html, body, [class*="css"]  {
+    overflow-x: hidden !important;
+}
 
+/* Make text responsive */
+@media (max-width: 768px) {
+    h1, h2, h3, p {
+        font-size: 90% !important;
+    }
+}
+
+/* Better spacing */
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    max-width: 900px;
+    margin: auto;
+}
+</style>
+""", unsafe_allow_html=True)
+
+def create_streamlit_app(llm, portfolio, clean_text):
     # ===== HEADER =====
     st.markdown(
         """
         <h1 style="text-align:center; color:#FF4B4B;">📮 Cold Email Generator</h1>
         <p style="text-align:center; font-size:1.1rem; color:gray;">
-            Enter a job post URL and instantly generate a personalized cold email tailored to the role.
+            Paste a job post link and instantly generate a personalized cold email tailored to the role.
         </p>
         """,
         unsafe_allow_html=True
@@ -46,12 +70,24 @@ def create_streamlit_app(llm, portfolio, clean_text):
                     st.markdown("---")
                     st.subheader(f"✉ Cold Email for: {job.get('role', 'Unknown Role')}")
 
-                    # Email display with copy button
-                    st.code(email, language="markdown")
-                    st.button("📋 Copy Email", key=f"copy_{job.get('role', 'unknown')}", on_click=lambda txt=email: st.session_state.update({"copied_email": txt}))
-                    
-                    if "copied_email" in st.session_state:
-                        st.success("Copied to clipboard! (Press Ctrl+V to paste)")
+                    # Display email in scroll-friendly box
+                    st.markdown(
+                        f"""
+                        <div style="background:#1E1E1E; padding:1rem; border-radius:8px; white-space:pre-wrap; word-wrap:break-word;">
+                        {email}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    # Copy to clipboard button
+                    copy_code = f"""
+                    <button onclick="navigator.clipboard.writeText(`{email}`)" 
+                        style="background:#FF4B4B;color:white;padding:0.5rem 1rem;border:none;border-radius:5px;cursor:pointer;margin-top:10px;">
+                        📋 Copy Email
+                    </button>
+                    """
+                    st.markdown(copy_code, unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
