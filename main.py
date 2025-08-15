@@ -1,39 +1,44 @@
-# main.py
+# Force-load newer SQLite BEFORE importing chromadb anywhere
+import sys
+import pysqlite3
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 import streamlit as st
+from chains import Chain
 from portfolio import Portfolio
-from chains import generate_email
-from bs4 import BeautifulSoup
-import requests
+from utils import clean_text
+from langchain_community.document_loaders import WebBaseLoader
 
-st.set_page_config(page_title="Cold Email Generator", layout="centered")
+def create_streamlit_app(llm, portfolio, clean_text):
+    st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📮")
+    st.title("📮 Cold Email Generator")
 
-st.title("📧 Cold Email Generator")
+    Url_input = st.text_input(
+        "🔗 Enter a Job Post URL:",
+        value="https://careers.nike.com/department-manager-nike-dolphin-mall/job/R-67111",
+    )
 
-# Load portfolio
-portfolio = Portfolio()
-portfolio.load_portfolio()
+    if st.button("🚀 Generate Email", use_container_width=True):
+        with st.spinner("Scraping job post and crafting your email..."):
+            try:
+                loader = WebBaseLoader([Url_input])
+                data = clean_text(loader.load().pop().page_content)
+                portfolio.load_portfolio()
 
-job_url = st.text_input("🔗 Enter a Job Post URL:")
+                jobs = llm.extract_jobs(data)
+                for job in jobs:
+                    skills = job.get("skills", [])
+                    links = portfolio.query_links(skills)
+                    email = llm.write_email(job, links)
 
-if st.button("🚀 Generate Email"):
-    try:
-        if not job_url.strip():
-            st.error("Please enter a valid job post URL.")
-        else:
-            # Fetch and clean job description
-            resp = requests.get(job_url, timeout=10)
-            soup = BeautifulSoup(resp.text, "html.parser")
-            job_text = " ".join(soup.stripped_strings)
+                    st.markdown("---")
+                    st.subheader(f"✉ Cold Email for: {job.get('role', 'Unknown Role')}")
+                    st.markdown(email)
 
-            if not job_text:
-                st.error("Could not extract text from job URL.")
-            else:
-                # Query portfolio for relevant links
-                skills = ["Python", "Machine Learning"]  # Replace with skill extraction
-                links = portfolio.query_links(skills)
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
 
-                email = generate_email(job_text + "\n\nPortfolio Links:\n" + "\n".join(links))
-                st.subheader("Generated Email")
-                st.write(email)
-    except Exception as e:
-        st.error(f"Error: {str(e)}")
+if __name__ == "__main__":
+    chain = Chain()
+    portfolio = Portfolio()
+    create_streamlit_app(chain, portfolio, clean_text)
