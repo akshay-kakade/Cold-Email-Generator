@@ -11,11 +11,23 @@ from langchain_community.document_loaders import WebBaseLoader
 
 def create_streamlit_app(llm, portfolio, clean_text):
     st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📮")
-    st.title("📮 Cold Email Generator")
 
+    # ===== HEADER =====
+    st.markdown(
+        """
+        <h1 style="text-align:center; color:#FF4B4B;">📮 Cold Email Generator</h1>
+        <p style="text-align:center; font-size:1.1rem; color:gray;">
+            Enter a job post URL and instantly generate a personalized cold email tailored to the role.
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ===== INPUT =====
     Url_input = st.text_input(
-        "🔗 Enter a Job Post URL:",
+        "🔗 Job Post URL:",
         value="https://careers.nike.com/department-manager-nike-dolphin-mall/job/R-67111",
+        help="Paste the link to the job post you want to target."
     )
 
     if st.button("🚀 Generate Email", use_container_width=True):
@@ -33,10 +45,27 @@ def create_streamlit_app(llm, portfolio, clean_text):
 
                     st.markdown("---")
                     st.subheader(f"✉ Cold Email for: {job.get('role', 'Unknown Role')}")
-                    st.markdown(email)
+
+                    # Email display with copy button
+                    st.code(email, language="markdown")
+                    st.button("📋 Copy Email", key=f"copy_{job.get('role', 'unknown')}", on_click=lambda txt=email: st.session_state.update({"copied_email": txt}))
+                    
+                    if "copied_email" in st.session_state:
+                        st.success("Copied to clipboard! (Press Ctrl+V to paste)")
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
+    # ===== FOOTER =====
+    st.markdown(
+        """
+        <hr>
+        <p style="text-align:center; color:gray; font-size:0.9rem;">
+            Created by <b>Akshay Kakade</b> & <b>Maverick Jones</b> 🚀
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
 
 if __name__ == "__main__":
     chain = Chain()
