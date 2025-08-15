@@ -33,41 +33,21 @@ def email_block(email_text):
         unsafe_allow_html=True
     )
 
-    # Copy Email Button
-    copy_code = f"""
-    <script>
-    function copyToClipboard() {{
-        navigator.clipboard.writeText(`{email_text.replace("`", "\\`")}`);
-        var btn = document.getElementById('copy-btn');
-        btn.innerText = '✅ Copied!';
-        setTimeout(()=>btn.innerText='📋 Copy Email', 1500);
-    }}
-    </script>
-    <button id="copy-btn" onclick="copyToClipboard()" style="
-        background: linear-gradient(90deg, #FF4B4B 0%, #FF914D 100%);
-        color: white;
-        padding: 0.5rem 1.2rem;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        margin-top: 10px;
-        font-size: 15px;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(255,75,75,0.08);
-        transition: background 0.3s;
-    ">📋 Copy Email</button>
-    """
-    st.markdown(copy_code, unsafe_allow_html=True)
-
-    # Download as Text File Button
-    st.download_button(
-        label="⬇️ Download as .txt",
-        data=email_text,
-        file_name="cold_email.txt",
-        mime="text/plain",
-        help="Download the generated email as a text file.",
-        use_container_width=True
-    )
+    colA, colB = st.columns(2)
+    with colA:
+        st.download_button(
+            label="⬇️ Download as .txt",
+            data=email_text,
+            file_name="cold_email.txt",
+            mime="text/plain",
+            help="Download the generated email as a text file.",
+            use_container_width=True
+        )
+    with colB:
+        if st.button("📋 Copy Email", use_container_width=True, key=email_text[:10]):
+            st.session_state['copied_email'] = email_text
+            st.success("Copied to clipboard! (Select and copy manually if not auto-copied)")
+            st.code(email_text, language=None)
 
 
 
