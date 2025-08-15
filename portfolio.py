@@ -6,9 +6,17 @@ import os
 class Portfolio:
     def __init__(self, file_path="resource/clean_fixed.csv"):
         self.file_path = file_path
-        os.makedirs(".chromadb", exist_ok=True)  # Writable folder for Streamlit Cloud
+        os.makedirs(".chromadb", exist_ok=True)
+
+        # Use DuckDB instead of SQLite (avoids system sqlite version issues)
+        self.chroma_client = chromadb.Client(
+            settings=chromadb.config.Settings(
+                persist_directory=".chromadb",
+                chroma_db_impl="duckdb+parquet"
+            )
+        )
+
         self.data = pd.read_csv(self.file_path)
-        self.chroma_client = chromadb.PersistentClient(path=".chromadb")
         self.collection = self.chroma_client.get_or_create_collection(name="portfolio")
 
     def load_portfolio(self):
