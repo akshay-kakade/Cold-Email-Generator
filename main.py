@@ -45,7 +45,7 @@ def create_streamlit_app(llm, portfolio, clean_text):
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
-
+ 
 if __name__ == "__main__":
     chain = Chain()
     portfolio = Portfolio()
