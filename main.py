@@ -13,15 +13,19 @@ def email_block(email_text):
     st.markdown(
         f"""
         <div style="
-            background-color: #f8f9fa;
-            padding: 1rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            background: linear-gradient(120deg, #232526 0%, #414345 100%);
+            color: #f8f8f8;
+            padding: 1.2rem 1rem;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18);
             white-space: pre-wrap;
             word-wrap: break-word;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.5;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 1.08rem;
+            line-height: 1.7;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.01em;
+            transition: background 0.3s;
         ">
         {email_text}
         </div>
@@ -72,7 +76,7 @@ def create_streamlit_app(llm, portfolio, clean_text):
 
     st.markdown("""
         <style>
-        body { overflow-x: hidden; background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%) !important; }
+        body { overflow-x: hidden; background: linear-gradient(120deg, #181a1b 0%, #232526 100%) !important; }
         .block-container { padding-top: 2rem; padding-bottom: 2rem; }
         .stTextInput, .stButton button, .stDownloadButton button {
             border-radius: 8px !important;
@@ -88,11 +92,20 @@ def create_streamlit_app(llm, portfolio, clean_text):
             background: #FF914D !important;
         }
         .stTextInput > div > input {
-            background: #fff !important;
+            background: #232526 !important;
+            color: #f8f8f8 !important;
             border: 1.5px solid #FF914D !important;
         }
+        .stTextInput label, .stTextInput span, .stTextInput div {
+            color: #f8f8f8 !important;
+        }
+        .stMarkdown, .stSubheader, .stTitle, .stInfo, .stSidebar, .stSidebarContent {
+            color: #f8f8f8 !important;
+        }
         @media (max-width: 768px) {
-            .stTextInput, .stButton button, .stDownloadButton button { width: 100% !important; }
+            .stTextInput, .stButton button, .stDownloadButton button { width: 100% !important; font-size: 15px !important; }
+            .block-container { padding: 0.5rem !important; }
+            .stSubheader, .stTitle { font-size: 1.1rem !important; }
         }
         footer { visibility: hidden; }
         </style>
