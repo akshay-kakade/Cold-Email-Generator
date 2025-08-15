@@ -1,4 +1,3 @@
-# Force-load newer SQLite BEFORE importing chromadb anywhere
 import sys
 import pysqlite3
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
@@ -8,35 +7,42 @@ from chains import Chain
 from portfolio import Portfolio
 from utils import clean_text
 from langchain_community.document_loaders import WebBaseLoader
+import pyperclip
 
-# ===== GLOBAL STYLING =====
 st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📮")
 st.markdown("""
 <style>
-/* Prevent horizontal scrolling */
-html, body, [class*="css"]  {
+html, body, [class*="css"] {
     overflow-x: hidden !important;
 }
-
-/* Make text responsive */
-@media (max-width: 768px) {
-    h1, h2, h3, p {
-        font-size: 90% !important;
-    }
-}
-
-/* Better spacing */
 .block-container {
     padding-top: 1rem;
     padding-bottom: 2rem;
     max-width: 900px;
     margin: auto;
 }
+.email-box {
+    background-color: #1E1E1E;
+    padding: 1rem;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: white;
+    font-family: monospace;
+}
+.copy-btn {
+    background-color: #FF4B4B;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 def create_streamlit_app(llm, portfolio, clean_text):
-    # ===== HEADER =====
     st.markdown(
         """
         <h1 style="text-align:center; color:#FF4B4B;">📮 Cold Email Generator</h1>
@@ -47,7 +53,6 @@ def create_streamlit_app(llm, portfolio, clean_text):
         unsafe_allow_html=True
     )
 
-    # ===== INPUT =====
     Url_input = st.text_input(
         "🔗 Job Post URL:",
         value="https://careers.nike.com/department-manager-nike-dolphin-mall/job/R-67111",
@@ -69,30 +74,24 @@ def create_streamlit_app(llm, portfolio, clean_text):
 
                     st.markdown("---")
                     st.subheader(f"✉ Cold Email for: {job.get('role', 'Unknown Role')}")
+                    st.markdown(f"<div class='email-box'>{email}</div>", unsafe_allow_html=True)
 
-                    # Display email in scroll-friendly box
-                    st.markdown(
-                        f"""
-                        <div style="background:#1E1E1E; padding:1rem; border-radius:8px; white-space:pre-wrap; word-wrap:break-word;">
-                        {email}
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    # Professional Copy Button
+                    if st.button("📋 Copy Email"):
+                        pyperclip.copy(email)
+                        st.success("Email copied to clipboard!")
+
+                    # Download Email Button
+                    st.download_button(
+                        label="💾 Download Email",
+                        data=email,
+                        file_name="cold_email.txt",
+                        mime="text/plain"
                     )
-
-                    # Copy to clipboard button
-                    copy_code = f"""
-                    <button onclick="navigator.clipboard.writeText(`{email}`)" 
-                        style="background:#FF4B4B;color:white;padding:0.5rem 1rem;border:none;border-radius:5px;cursor:pointer;margin-top:10px;">
-                        📋 Copy Email
-                    </button>
-                    """
-                    st.markdown(copy_code, unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
 
-    # ===== FOOTER =====
     st.markdown(
         """
         <hr>
